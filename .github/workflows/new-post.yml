@@ -1,0 +1,74 @@
+name: افزودن پست جدید به صف
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  contents: write
+  issues: write
+
+jobs:
+  add-to-queue:
+    if: contains(github.event.issue.labels.*.name, 'new-post')
+    runs-on: ubuntu-latest
+    steps:
+      - name: دریافت کد ریپازیتوری
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: نصب Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: نصب وابستگی‌ها
+        run: npm ci
+
+      - name: افزودن پست به صف
+        id: add
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_BUSINESS_ACCOUNT_ID: ${{ secrets.IG_BUSINESS_ACCOUNT_ID }}
+        run: node scripts/addToQueue.js
+
+      - name: کامیت تغییرات (صف و ویدیوی ساخته‌شده)
+        run: |
+          git config user.name "insta-ai-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add data/queue.json output/
+          git diff --cached --quiet || git commit -m "افزودن پست جدید از ایشو #${{ github.event.issue.number }}"
+          git push
+
+      - name: کامنت تایید روی ایشو
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `✅ پست به صف اضافه شد.\n\nشناسه: \`${{ steps.add.outputs.post_id }}\`\nزمان انتشار: \`${{ steps.add.outputs.scheduled_at }}\`\nنوع: \`${{ steps.add.outputs.media_type }}\`\n\nدر اولین اجرای زمان‌بند (حداکثر تا ۱۵ دقیقه دیگر) منتشر می‌شود.`
+            });
+            await github.rest.issues.update({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              state: 'closed'
+            });
+
+      - name: کامنت خطا (در صورت شکست)
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            await github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body: `❌ خطا در پردازش این پست. لطفاً فیلدها را بررسی کنید (به‌خصوص نام دقیق فایل عکس‌ها) و دوباره یک ایشو جدید بسازید.`
+            });
