@@ -1,0 +1,41 @@
+name: پردازش و انتشار صف اینستاگرام
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  process-queue:
+    runs-on: ubuntu-latest
+    steps:
+      - name: دریافت کد ریپازیتوری
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: نصب Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: نصب وابستگی‌ها
+        run: npm ci
+
+      - name: پردازش صف و انتشار
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
+          IG_BUSINESS_ACCOUNT_ID: ${{ secrets.IG_BUSINESS_ACCOUNT_ID }}
+        run: node scripts/processQueue.js
+
+      - name: کامیت وضعیت به‌روزشده صف
+        run: |
+          git config user.name "insta-ai-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git add data/queue.json
+          git diff --cached --quiet || git commit -m "به‌روزرسانی وضعیت صف پست‌ها"
+          git push
