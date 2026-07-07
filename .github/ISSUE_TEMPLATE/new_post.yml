@@ -1,0 +1,54 @@
+name: 📸 افزودن پست جدید به صف
+description: یک پست/ریلز/استوری جدید برای انتشار خودکار در اینستاگرام تعریف کنید
+title: "پست جدید"
+labels: ["new-post"]
+body:
+  - type: dropdown
+    id: content_type
+    attributes:
+      label: نوع محتوا
+      options:
+        - "پست ساده (فید)"
+        - "ریلز (ویدیو از چند عکس)"
+        - "استوری"
+    validations:
+      required: true
+
+  - type: input
+    id: images
+    attributes:
+      label: نام فایل‌های عکس
+      description: نام فایل‌هایی که قبلاً در پوشه uploads/ آپلود کرده‌اید را وارد کنید. برای چند عکس، با کاما جدا کنید.
+      placeholder: "photo1.jpg, photo2.jpg, photo3.jpg"
+    validations:
+      required: true
+
+  - type: input
+    id: topic
+    attributes:
+      label: موضوع محتوا
+      description: کپشن بر این اساس تولید می‌شود
+      placeholder: "معرفی محصول جدید فروشگاه"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: tone
+    attributes:
+      label: لحن
+      options:
+        - "صمیمی و جذاب"
+        - "حرفه‌ای"
+        - "طنز"
+        - "پرانرژی"
+    validations:
+      required: false
+
+  - type: input
+    id: scheduled_at
+    attributes:
+      label: "زمان انتشار (اختیاری)"
+      description: فرمت ISO مثل 2026-07-10T09:00:00.000Z — یا خالی بگذارید برای انتشار در اولین اجرای بعدی (حداکثر تا ۱۵ دقیقه دیگر)
+      placeholder: "2026-07-10T09:00:00.000Z"
+    validations:
+      required: false
