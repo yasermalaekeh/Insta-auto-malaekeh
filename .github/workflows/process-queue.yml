@@ -23,7 +23,7 @@ jobs:
           node-version: '20'
 
       - name: نصب وابستگی‌ها
-        run: npm ci
+        run: npm install 
 
       - name: پردازش صف و انتشار
         env:
