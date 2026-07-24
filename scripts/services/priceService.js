@@ -46,16 +46,21 @@ async function fetchGoldPricePerGram() {
   return parseInt(match[1], 10);
 }
 
-async function calculateFinalPrice({ weight, karat, laborFee, goldPricePerGram18 }) {
-  if (!weight || !karat || laborFee === undefined || laborFee === null) {
+async function calculateFinalPrice({ weight, karat, laborFeeType, laborFeeValue, goldPricePerGram18 }) {
+  if (!weight || !karat || laborFeeValue === undefined || laborFeeValue === null) {
     throw new Error('وزن، عیار و اجرت ساخت برای محاسبه قیمت الزامی است.');
   }
 
   const purity = KARAT_PURITY[String(karat)] || BASE_KARAT_PURITY;
   const price18 = goldPricePerGram18 || (await fetchGoldPricePerGram());
   const pricePerGram = Math.round(price18 * (purity / BASE_KARAT_PURITY));
-
   const basePrice = Math.round(weight * pricePerGram);
+
+  const laborFee =
+    laborFeeType === 'percent'
+      ? Math.round(basePrice * (laborFeeValue / 100))
+      : Math.round(laborFeeValue);
+
   const subtotalBeforeProfit = basePrice + laborFee;
   const profit = Math.round(subtotalBeforeProfit * PROFIT_RATE);
   const vatBase = laborFee + profit;
@@ -66,6 +71,7 @@ async function calculateFinalPrice({ weight, karat, laborFee, goldPricePerGram18
     goldPricePerGram18: price18,
     pricePerGramForKarat: pricePerGram,
     basePrice,
+    laborFeeType,
     laborFee,
     profit,
     vat,
