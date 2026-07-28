@@ -1,6 +1,5 @@
 const path = require('path');
 
-// در GitHub Actions مقدار GITHUB_REPOSITORY به‌صورت خودکار برابر "owner/repo" است
 const repo = process.env.GITHUB_REPOSITORY || 'YOUR_USERNAME/YOUR_REPO';
 const branch = process.env.PUBLIC_BRANCH || 'main';
 
@@ -20,6 +19,11 @@ module.exports = {
     businessAccountId: process.env.IG_BUSINESS_ACCOUNT_ID,
     graphApiVersion: 'v20.0',
     graphBaseUrl: 'https://graph.facebook.com',
+  },
+
+  telegram: {
+    botToken: process.env.TELEGRAM_BOT_TOKEN,
+    channelUsername: process.env.TELEGRAM_CHANNEL_USERNAME || '@malaekehgold',
   },
 
   paths: {
