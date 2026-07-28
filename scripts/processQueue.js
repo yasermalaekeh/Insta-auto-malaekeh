@@ -1,5 +1,6 @@
 const db = require('./db');
 const instagramService = require('./services/instagramService');
+const telegramService = require('./services/telegramService');
 const captionService = require('./services/captionService');
 
 async function main() {
@@ -25,18 +26,47 @@ async function main() {
         db.updatePost(post.id, updates);
       }
 
-      console.log(`🚀 در حال انتشار پست ${post.id} (${post.type})...`);
-      const result = await instagramService.publishContent({
-        mediaUrl: post.mediaUrl,
-        caption: caption || post.caption || '',
-        mediaType: post.type,
-      });
+      const finalCaption = caption || post.caption || '';
+      const publishResults = {};
+
+      try {
+        console.log(`📨 در حال انتشار پست ${post.id} در تلگرام...`);
+        const tgResult = await telegramService.publishContent({
+          mediaUrl: post.mediaUrl,
+          mediaUrls: post.mediaUrls,
+          caption: finalCaption,
+        });
+        publishResults.telegram = { messageId: tgResult.messageId, allMessageIds: tgResult.allMessageIds };
+        console.log(`✅ پست ${post.id} در تلگرام منتشر شد (message id: ${tgResult.messageId})`);
+      } catch (tgErr) {
+        console.error(`❌ خطا در انتشار پست ${post.id} در تلگرام:`, tgErr.message);
+        publishResults.telegramError = tgErr.message;
+      }
+
+      if (process.env.IG_ACCESS_TOKEN && process.env.IG_BUSINESS_ACCOUNT_ID) {
+        try {
+          console.log(`🚀 در حال انتشار پست ${post.id} در اینستاگرام (${post.type})...`);
+          const igResult = await instagramService.publishContent({
+            mediaUrl: post.mediaUrl,
+            caption: finalCaption,
+            mediaType: post.type,
+          });
+          publishResults.instagram = { mediaId: igResult.mediaId };
+          console.log(`✅ پست ${post.id} در اینستاگرام منتشر شد (media id: ${igResult.mediaId})`);
+        } catch (igErr) {
+          console.error(`❌ خطا در انتشار پست ${post.id} در اینستاگرام:`, igErr.message);
+          publishResults.instagramError = igErr.message;
+        }
+      } else {
+        console.log('ℹ️ توکن اینستاگرام هنوز تنظیم نشده — این مرحله رد شد.');
+      }
+
       db.updatePost(post.id, {
         status: 'published',
         publishedAt: new Date().toISOString(),
-        instagramMediaId: result.mediaId,
+        publishResults,
       });
-      console.log(`✅ پست ${post.id} با موفقیت منتشر شد (media id: ${result.mediaId})`);
+      console.log(`✅ پردازش پست ${post.id} کامل شد`);
     } catch (err) {
       console.error(`❌ خطا در انتشار پست ${post.id}:`, err.message);
       db.updatePost(post.id, { status: 'failed', error: err.message });
