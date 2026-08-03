@@ -6,7 +6,7 @@ function ensureDataFile() {
   const dir = path.dirname(config.paths.dataFile);
   if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
   if (!fs.existsSync(config.paths.dataFile)) {
-    fs.writeFileSync(config.paths.dataFile, JSON.stringify({ posts: [] }, null, 2));
+    fs.writeFileSync(config.paths.dataFile, JSON.stringify({ posts: [], telegramUpdateOffset: 0 }, null, 2));
   }
 }
 
@@ -36,10 +36,40 @@ function updatePost(id, updates) {
   return data.posts[idx];
 }
 
-function getPendingPosts() {
+function getPostById(id) {
   const data = readAll();
-  const now = new Date().toISOString();
-  return data.posts.filter((p) => p.status === 'scheduled' && p.scheduledAt <= now);
+  return data.posts.find((p) => p.id === id) || null;
 }
 
-module.exports = { addPost, updatePost, getPendingPosts, readAll, writeAll };
+function getPendingPosts() {
+  const data = readAll();
+  return data.posts.filter((p) => p.status === 'pending');
+}
+
+function getAwaitingApprovalPosts() {
+  const data = readAll();
+  return data.posts.filter((p) => p.status === 'awaiting_approval');
+}
+
+function getOffset() {
+  const data = readAll();
+  return data.telegramUpdateOffset || 0;
+}
+
+function setOffset(offset) {
+  const data = readAll();
+  data.telegramUpdateOffset = offset;
+  writeAll(data);
+}
+
+module.exports = {
+  addPost,
+  updatePost,
+  getPostById,
+  getPendingPosts,
+  getAwaitingApprovalPosts,
+  getOffset,
+  setOffset,
+  readAll,
+  writeAll,
+};
