@@ -24,6 +24,7 @@ module.exports = {
   telegram: {
     botToken: process.env.TELEGRAM_BOT_TOKEN,
     channelUsername: process.env.TELEGRAM_CHANNEL_USERNAME || '@malaekehgold',
+    adminChatId: process.env.TELEGRAM_ADMIN_CHAT_ID,
   },
 
   paths: {
